@@ -24,11 +24,6 @@ export class DashboardComponent implements OnInit {
     invoicesScanned: 0,
     totalInventoryValue: 0
   });
-  currentRoute = 'dashboard';
-  adminEmail = '';
-  languages = signal<Language[]>([]);
-  selectedLanguage = signal<string>('en');
-  showLanguageMenu = signal(false);
 
   constructor(
     private router: Router,
@@ -38,33 +33,7 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.adminEmail = localStorage.getItem('adminEmail') || 'Admin';
-    this.selectedLanguage.set(this.languageService.getCurrentLanguage());
-    this.loadLanguages();
     this.loadDashboardData();
-  }
-
-  loadLanguages() {
-    this.languageService.getLanguages().subscribe({
-      next: (data) => this.languages.set(data),
-      error: (err) => console.error('Error loading languages:', err)
-    });
-  }
-
-  toggleLanguageMenu() {
-    this.showLanguageMenu.update(v => !v);
-  }
-
-  selectLanguage(code: string) {
-    this.languageService.setLanguage(code);
-    this.translationService.setLanguage(code);
-    this.selectedLanguage.set(code);
-    this.showLanguageMenu.set(false);
-  }
-
-  getLanguageDisplay(): string {
-    const lang = this.languages().find(l => l.code === this.selectedLanguage());
-    return lang ? `${lang.name} / ${lang.nativeName}` : 'English / हिन्दी';
   }
 
   loadDashboardData() {
@@ -100,10 +69,12 @@ export class DashboardComponent implements OnInit {
         next: (savedInvoice) => {
           this.isScanning.set(false);
           this.recentScans.update(scans => [savedInvoice, ...scans]);
-          this.stats.update(s => ({
-            ...s,
-            invoicesScanned: s.invoicesScanned + 1
-          }));
+          this.stats.update(s => (
+            {
+              ...s,
+              invoicesScanned: s.invoicesScanned + 1
+            }
+          ));
         },
         error: (err) => {
           this.isScanning.set(false);
@@ -111,11 +82,6 @@ export class DashboardComponent implements OnInit {
         }
       });
     }, 3000);
-  }
-
-  navigateTo(route: string) {
-    this.currentRoute = route.substring(1);
-    this.router.navigate([route]);
   }
 
   exportToExcel() {
@@ -168,14 +134,5 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => console.error('Error generating reorder list:', err)
     });
-  }
-
-  toggleUserMenu() {
-    // Can implement dropdown menu here
-  }
-
-  logout() {
-    localStorage.removeItem('adminEmail');
-    this.router.navigate(['/login']);
   }
 }

@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, of, BehaviorSubject } from 'rxjs';
 
 export interface Language {
   id: number;
@@ -14,17 +13,23 @@ export interface Language {
   providedIn: 'root'
 })
 export class LanguageService {
-  private apiUrl = 'http://localhost:8083/api/languages';
+  private languages: Language[] = [
+    { id: 1, code: 'en', name: 'English', nativeName: 'English', active: true },
+    { id: 2, code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', active: true },
+    { id: 3, code: 'mr', name: 'Marathi', nativeName: 'मराठी', active: true },
+    { id: 4, code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', active: true }
+  ];
+
   private currentLanguageSubject = new BehaviorSubject<string>(
     localStorage.getItem('selectedLanguage') || 'en'
   );
   
   currentLanguage$ = this.currentLanguageSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor() {}
 
   getLanguages(): Observable<Language[]> {
-    return this.http.get<Language[]>(this.apiUrl);
+    return of(this.languages);
   }
 
   setLanguage(code: string): void {

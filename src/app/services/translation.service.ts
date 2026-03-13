@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 interface Translations {
   [key: string]: {
@@ -186,10 +186,13 @@ export class TranslationService {
     }
   };
 
-  private currentLangSubject = new BehaviorSubject<string>('en');
+  private currentLangSubject = new BehaviorSubject<string>(
+    localStorage.getItem('selectedLanguage') || 'en'
+  );
   currentLang$ = this.currentLangSubject.asObservable();
 
   setLanguage(lang: string) {
+    localStorage.setItem('selectedLanguage', lang);
     this.currentLangSubject.next(lang);
   }
 

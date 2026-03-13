@@ -2,7 +2,8 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +14,7 @@ import { AuthService } from '../services/auth.service';
       <div class="auth-card">
         <div class="auth-header">
           <h1>Admin Login</h1>
-          <p>Enter your credentials to access the dashboard</p>
+          <p>Enter your credentials to access the admin dashboard</p>
         </div>
         <form (ngSubmit)="onSubmit()">
           <div class="form-group">
@@ -117,27 +118,43 @@ export class LoginComponent {
   loading = signal(false);
   error = signal('');
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
   onSubmit() {
     this.loading.set(true);
     this.error.set('');
 
-    this.authService.login(this.email, this.password).subscribe({
-      next: (response) => {
+    const loginData = {
+      email: this.email,
+      password: this.password
+    };
+
+    this.http.post(`${environment.apiUrl}/auth/login`, loginData).subscribe({
+      next: (response: any) => {
         this.loading.set(false);
+        console.log('Admin login response:', response);
+        
         if (response.success) {
           localStorage.setItem('adminEmail', this.email);
+          localStorage.setItem('userType', '1');
+          localStorage.setItem('token', response.token);
+          localStorage.setItem('userName', response.name || 'Admin');
           this.router.navigate(['/dashboard']);
-        } else if (!response.passwordSet) {
-          this.router.navigate(['/set-password'], { queryParams: { email: this.email } });
         } else {
-          this.error.set(response.message);
+          this.error.set(response.message || 'Login failed');
         }
       },
-      error: () => {
+      error: (error) => {
         this.loading.set(false);
-        this.error.set('Login failed. Please try again.');
+        console.error('Login error:', error);
+        
+        if (error.status === 403) {
+          this.error.set('Access denied. Only admin users can login here.');
+        } else if (error.status === 400) {
+          this.error.set(error.error?.message || 'Invalid email or password');
+        } else {
+          this.error.set('Login failed. Please try again.');
+        }
       }
     });
   }
