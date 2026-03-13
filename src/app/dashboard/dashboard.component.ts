@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DashboardService, DashboardStats, InvoiceDTO, ProductDTO } from '../services/dashboard.service';
 import { LanguageService, Language } from '../services/language.service';
+import { TranslationService } from '../services/translation.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['../app.css'],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
@@ -31,7 +33,8 @@ export class DashboardComponent implements OnInit {
   constructor(
     private router: Router,
     private dashboardService: DashboardService,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit() {
@@ -54,6 +57,7 @@ export class DashboardComponent implements OnInit {
 
   selectLanguage(code: string) {
     this.languageService.setLanguage(code);
+    this.translationService.setLanguage(code);
     this.selectedLanguage.set(code);
     this.showLanguageMenu.set(false);
   }
