@@ -1,0 +1,241 @@
+<div class="container">
+  <aside class="sidebar">
+    <div class="brand">
+      <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background-color: var(--primary); border-radius: 8px;">
+        <iconify-icon icon="lucide:box" style="font-size: 20px; color: white"></iconify-icon>
+      </div>
+      <span class="brand-title">VyaparSync</span>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Main Menu</div>
+      <div class="nav-item" [class.active]="currentRoute === 'dashboard'" (click)="navigateTo('/dashboard')">
+        <iconify-icon icon="lucide:layout-dashboard" style="font-size: 20px"></iconify-icon>
+        Dashboard
+      </div>
+      <div class="nav-item" [class.active]="currentRoute === 'scan'" (click)="navigateTo('/scan')">
+        <iconify-icon icon="lucide:scan-line" style="font-size: 20px"></iconify-icon>
+        Scan Invoice (OCR)
+      </div>
+      <div class="nav-item" [class.active]="currentRoute === 'inventory'" (click)="navigateTo('/inventory')">
+        <iconify-icon icon="lucide:package" style="font-size: 20px"></iconify-icon>
+        Inventory
+      </div>
+      <div class="nav-item" [class.active]="currentRoute === 'alerts'" (click)="navigateTo('/alerts')">
+        <iconify-icon icon="lucide:bell-ring" style="font-size: 20px"></iconify-icon>
+        Alerts & Reorders
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Integration</div>
+      <div class="nav-item" (click)="exportToExcel()">
+        <iconify-icon icon="lucide:file-spreadsheet" style="font-size: 20px"></iconify-icon>
+        Export to Excel
+      </div>
+      <div class="nav-item" (click)="syncWithTally()">
+        <iconify-icon icon="lucide:arrow-right-left" style="font-size: 20px"></iconify-icon>
+        Tally Sync
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sync-status">
+        <iconify-icon icon="lucide:check-circle-2" style="font-size: 16px"></iconify-icon>
+        <span class="sync-text">All data synced</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="header">
+      <div style="visibility: hidden;"></div>
+      <div class="header-actions">
+        <div class="language-selector" (click)="toggleLanguageMenu()" style="position: relative; cursor: pointer;">
+          <iconify-icon icon="lucide:globe" style="font-size: 16px"></iconify-icon>
+          {{ getLanguageDisplay() }}
+          <iconify-icon icon="lucide:chevron-down" style="font-size: 16px"></iconify-icon>
+          
+          <div *ngIf="showLanguageMenu()" class="language-dropdown" (click)="$event.stopPropagation()">
+            @for (lang of languages(); track lang.id) {
+              <div class="language-option" 
+                   [class.selected]="lang.code === selectedLanguage()"
+                   (click)="selectLanguage(lang.code)">
+                <span>{{ lang.name }}</span>
+                <span style="color: var(--muted-foreground); font-size: 13px;">{{ lang.nativeName }}</span>
+                @if (lang.code === selectedLanguage()) {
+                  <iconify-icon icon="lucide:check" style="font-size: 16px; color: var(--primary); margin-left: auto;"></iconify-icon>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--muted-foreground); cursor: pointer;">
+          <iconify-icon icon="lucide:bell" style="font-size: 20px"></iconify-icon>
+        </div>
+        <div class="user-profile" style="cursor: pointer;" (click)="toggleUserMenu()">
+          <img src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F35-50%2FSouth%20Asian%2F1" alt="User Avatar" class="avatar" />
+          <div style="display: flex; flex-direction: column">
+            <span style="font-size: 14px; font-weight: 600">{{ adminEmail }}</span>
+            <span style="font-size: 12px; color: var(--muted-foreground)">Admin</span>
+          </div>
+        </div>
+        <button class="btn-secondary" (click)="logout()" style="padding: 8px 12px;">
+          <iconify-icon icon="lucide:log-out" style="font-size: 16px"></iconify-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+      <div class="page-title-row">
+        <div>
+          <h1 class="page-title">Inventory Overview</h1>
+          <p class="page-subtitle">Smart extraction and stock management</p>
+        </div>
+        <div style="display: flex; gap: 12px">
+          <button class="btn-secondary" (click)="exportReport()">
+            <iconify-icon icon="lucide:download" style="font-size: 16px"></iconify-icon>
+            Export Report
+          </button>
+          <button class="btn-primary" (click)="simulateScan()">
+            <iconify-icon icon="lucide:camera" style="font-size: 16px" *ngIf="!isScanning()"></iconify-icon>
+            <iconify-icon icon="lucide:loader-2" style="font-size: 16px" class="animate-spin" *ngIf="isScanning()"></iconify-icon>
+            {{ isScanning() ? 'Scanning...' : 'Scan New Invoice' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Total Items in Stock</span>
+            <div class="stat-icon-wrapper stat-icon-primary">
+              <iconify-icon icon="lucide:layers" style="font-size: 18px"></iconify-icon>
+            </div>
+          </div>
+          <div class="stat-value">{{ stats().totalItems | number }}</div>
+          <div class="stat-desc">+{{ stats().invoicesScanned }} from recent scans</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Low Stock Alerts</span>
+            <div class="stat-icon-wrapper stat-icon-warning">
+              <iconify-icon icon="lucide:alert-triangle" style="font-size: 18px"></iconify-icon>
+            </div>
+          </div>
+          <div class="stat-value">{{ stats().lowStockAlerts }}</div>
+          <div class="stat-desc">Needs reordering today</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Invoices Scanned</span>
+            <div class="stat-icon-wrapper stat-icon-success">
+              <iconify-icon icon="lucide:receipt" style="font-size: 18px"></iconify-icon>
+            </div>
+          </div>
+          <div class="stat-value">{{ stats().invoicesScanned }}</div>
+          <div class="stat-desc">Today, 98% accuracy</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Total Inventory Value</span>
+            <div class="stat-icon-wrapper stat-icon-primary">
+              <iconify-icon icon="lucide:wallet" style="font-size: 18px"></iconify-icon>
+            </div>
+          </div>
+          <div class="stat-value">₹{{ (stats().totalInventoryValue / 100000).toFixed(1) }}L</div>
+          <div class="stat-desc">Updated 5 mins ago</div>
+        </div>
+      </div>
+
+      <div class="grid-layout">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Recent Invoice Scans (OCR)</h2>
+            <span style="font-size: 13px; color: var(--primary); font-weight: 500; cursor: pointer;">View All</span>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Vendor / Date</th>
+                  <th>Status</th>
+                  <th>Items Extracted</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (scan of recentScans(); track scan.id) {
+                  <tr class="animate-fade-in">
+                    <td>
+                      <div style="font-weight: 500">{{ scan.vendor }}</div>
+                      <div style="font-size: 12px; color: var(--muted-foreground)">{{ scan.date }}</div>
+                    </td>
+                    <td><span class="badge" [class.badge-success]="scan.status === 'Auto-Synced'" [class.badge-warning]="scan.status === 'Needs Review'">{{ scan.status }}</span></td>
+                    <td>{{ scan.items }}</td>
+                    <td style="font-weight: 500">₹{{ scan.amount }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Low-Stock Alerts</h2>
+            <iconify-icon icon="lucide:more-horizontal" style="font-size: 20px; color: var(--muted-foreground)"></iconify-icon>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th style="text-align: right">Stock Left</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (product of lowStockProducts(); track product.id) {
+                  <tr>
+                    <td>
+                      <div class="item-cell">
+                        <div class="item-icon"><iconify-icon icon="lucide:package" style="font-size: 16px"></iconify-icon></div>
+                        <div>
+                          <div style="font-weight: 500">{{ product.name }}</div>
+                          <div style="font-size: 12px; color: var(--muted-foreground)">Min: {{ product.minStock }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="text-align: right; color: #dc2626; font-weight: 600;">{{ product.stockLeft }} units</td>
+                  </tr>
+                }
+                @empty {
+                  <tr>
+                    <td colspan="2" style="text-align: center; padding: 2rem; color: var(--muted-foreground)">
+                      No low stock items
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 16px; border-top: 1px solid var(--border);">
+            <button class="btn-secondary" style="width: 100%; justify-content: center" (click)="generateReorderList()">Generate Reorder List</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="scan-overlay animate-fade-in" *ngIf="isScanning()">
+  <div class="scan-modal">
+    <iconify-icon icon="lucide:camera" width="48" height="48" style="color: var(--primary); margin-bottom: 1rem;"></iconify-icon>
+    <h3 style="margin-bottom: 0.5rem">Processing Invoice...</h3>
+    <p style="color: var(--muted-foreground); margin-bottom: 1.5rem">Extracting items and syncing with Tally</p>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+</div>
