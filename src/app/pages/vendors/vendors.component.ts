@@ -6,9 +6,9 @@ import { environment } from '../../../environments/environment';
 
 interface User {
   id: number;
-  vendorName: string;
+  name: string;
   shopName: string;
-  phoneNumber: string;
+  phone: string;
   status: 'approved' | 'pending' | 'blocked';
 }
 
@@ -37,9 +37,9 @@ interface User {
           <tbody>
             @for (user of users(); track user.id) {
               <tr>
-                <td>{{ user.vendorName }}</td>
+                <td>{{ user.name }}</td>
                 <td>{{ user.shopName }}</td>
-                <td>{{ user.phoneNumber }}</td>
+                <td>{{ user.phone }}</td>
                 <td>
                   <span [class]="'status-badge status-' + user.status.toLowerCase()">
                     {{ user.status | uppercase }}
